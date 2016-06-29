@@ -250,6 +250,8 @@
 			},
 			dropBubble: false,
 			dragoverBubble: false,
+			longPressMode: false,
+			holdThresholdDelay: 500,
 			dataIdAttr: 'data-id',
 			delay: 0,
 			forceFallback: false,
@@ -297,6 +299,38 @@
 		constructor: Sortable,
 
 		_onTapStart: function (/** Event|TouchEvent */evt) {
+			if (this.options.longPressMode) {
+				var _this = this,
+					el = this.el,
+					options = this.options,
+					touch = evt.touches && evt.touches[0],
+					target = (touch || evt).target;
+
+				tapEvt = evt;
+				target = _closest(target, options.draggable, el);
+
+				if (touch) {
+					// Touch device support
+					tapEvt = {
+						target: target,
+						clientX: touch.clientX,
+						clientY: touch.clientY
+					};
+				}
+
+				this._bindThresholdCheckings();
+
+				this._longPressTimeout = window.setTimeout(function () {
+					_this._startDrag(evt);
+				}, options.holdThresholdDelay);
+			} else {
+				this._startDrag(evt);
+			}
+		},
+
+		_startDrag: function (/** Event|TouchEvent */evt) {
+			this._bindThresholdCheckings();
+
 			var _this = this,
 				el = this.el,
 				options = this.options,
@@ -476,6 +510,47 @@
 			}
 		},
 
+		_bindThresholdCheckings: function () {
+			_on(document, 'mouseup', this._cancelDrag);
+			_on(document, 'touchend', this._cancelDrag);
+			_on(document, 'touchcancel', this._cancelDrag);
+			_on(document, 'touchleave', this._cancelDrag);
+			_on(document, 'mousemove', this._checkDelta);
+			_on(document, 'touchmove', this._checkDelta);
+		},
+
+		_unbindThresholdCheckings: function () {
+			_off(document, 'mouseup', this._cancelDrag);
+			_off(document, 'touchend', this._cancelDrag);
+			_off(document, 'touchcancel', this._cancelDrag);
+			_off(document, 'touchleave', this._cancelDrag);
+			_off(document, 'mousemove', this._checkDelta);
+			_off(document, 'touchmove', this._checkDelta);
+		},
+
+		_checkDelta: function (evt) {
+			var dxMax = 10;
+			var dyMax = 10;
+
+			if (tapEvt) {
+				var touch = evt.touches ? evt.touches[0] : evt,
+					dx = Math.abs(touch.clientX - tapEvt.clientX),
+					dy = Math.abs(touch.clientY - tapEvt.clientY);
+
+				if (dx > dxMax || dy > dyMax) {
+					this._cancelDrag();
+				}
+			}
+		},
+
+		_cancelDrag: function () {
+			if (this._longPressTimeout) {
+				window.clearTimeout(this._longPressTimeout);
+			}
+
+			this._unbindThresholdCheckings();
+		},
+
 		_emulateDragOver: function () {
 			if (touchEvt) {
 				if (this._lastX === touchEvt.clientX && this._lastY === touchEvt.clientY) {
@@ -519,7 +594,6 @@
 				}
 			}
 		},
-
 
 		_onTouchMove: function (/**TouchEvent*/evt) {
 			if (tapEvt) {
@@ -890,7 +964,7 @@
 		},
 
 
-		_nulling: function() {
+		_nulling: function () {
 			if (Sortable.active === this) {
 				rootEl =
 				dragEl =
