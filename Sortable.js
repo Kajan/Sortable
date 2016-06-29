@@ -298,7 +298,17 @@
 	Sortable.prototype = /** @lends Sortable.prototype */ {
 		constructor: Sortable,
 
+		_disableContextMenu: function (event) {
+			var e = event || window.event;
+			e.preventDefault && e.preventDefault();
+			e.stopPropagation && e.stopPropagation();
+			e.cancelBubble = true;
+			e.returnValue = false;
+			return false;
+		},
+
 		_onTapStart: function (/** Event|TouchEvent */evt) {
+			this._disableContextMenu(evt);
 			if (this.options.longPressMode) {
 				var _this = this,
 					el = this.el,
@@ -529,6 +539,7 @@
 		},
 
 		_checkDelta: function (evt) {
+			this._disableContextMenu(evt);
 			var dxMax = 10;
 			var dyMax = 10;
 
@@ -544,6 +555,7 @@
 		},
 
 		_cancelDrag: function () {
+			this._disableContextMenu(evt);
 			if (this._longPressTimeout) {
 				window.clearTimeout(this._longPressTimeout);
 			}
