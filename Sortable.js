@@ -554,7 +554,7 @@
 			}
 		},
 
-		_cancelDrag: function () {
+		_cancelDrag: function (evt) {
 			this._disableContextMenu(evt);
 			if (this._longPressTimeout) {
 				window.clearTimeout(this._longPressTimeout);
